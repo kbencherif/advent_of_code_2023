@@ -77,6 +77,7 @@ fn main() {
     let lines: Vec<String> = read_lines("input.txt").expect("Can't read file");
     let mut games: Vec<Game> = vec![];
     let mut result = 0;
+    let mut resultp2 = 0;
     let default_game = Game::new(-1, 12, 13, 14);
 
     for line in lines {
@@ -85,6 +86,7 @@ fn main() {
     }
 
     for game in games {
+        resultp2 += game.red * game.green * game.blue;
         if game.red <= default_game.red
             && game.blue <= default_game.blue
             && game.green <= default_game.green
@@ -94,4 +96,5 @@ fn main() {
     }
 
     println!("{}", result);
+    println!("{}", resultp2);
 }
