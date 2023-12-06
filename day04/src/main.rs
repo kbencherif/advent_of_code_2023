@@ -1,14 +1,32 @@
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 
+#[derive(Copy, Clone, Debug)]
+struct Card {
+    nb_match: i32,
+    result: i32,
+}
+
 fn main() {
     let lines: Vec<String> = read_lines("input.txt").expect("Can't read file");
-    let result: i32 = lines
+    let cards: Vec<Card> = lines
         .into_iter()
         .map(|l| process_line(l.split(':').nth(1).unwrap().trim().to_string()))
-        .sum();
+        .collect();
+    let result: i32 = cards.iter().map(|card| card.result).sum();
+    println!("{}", result);
 
-    print!("{}", result);
+    let mut count = vec![1usize; cards.len()];
+
+    cards.into_iter().enumerate().for_each(|(i, card)| {
+        if card.nb_match > 0 {
+            let n: usize = i + 1;
+            for index in n..n + card.nb_match as usize {
+                count[index] += count[i];
+            }
+        }
+    });
+    println!("{}", count.into_iter().sum::<usize>())
 }
 
 fn read_lines(filename: &str) -> io::Result<Vec<String>> {
@@ -18,13 +36,17 @@ fn read_lines(filename: &str) -> io::Result<Vec<String>> {
 fn fibonnaci(n: i32) -> i32 {
     let mut result: i32 = 1;
 
+    if n <= 1 {
+        return n;
+    }
+
     for _i in 1..n {
         result *= 2;
     }
     result
 }
 
-fn process_line(s: String) -> i32 {
+fn process_line(s: String) -> Card {
     let card: Vec<Vec<i32>> = s
         .split('|')
         .map(|split| {
@@ -46,9 +68,8 @@ fn process_line(s: String) -> i32 {
         })
         .sum();
 
-    if result > 1 {
-        fibonnaci(result)
-    } else {
-        result
+    Card {
+        nb_match: result,
+        result: fibonnaci(result),
     }
 }
