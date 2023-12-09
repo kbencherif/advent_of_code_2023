@@ -58,10 +58,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .into_iter()
         .map(|e| process_map(e))
         .collect();
-    let result = seeds
-        .into_iter()
-        .map(|seed| find_location(seed, &almanac))
+    let mut result = seeds
+        .iter()
+        .map(|seed| find_location(*seed, &almanac))
         .collect::<Vec<u64>>();
+    println!("{:?}", result.into_iter().min());
+
+    result = seeds
+        .chunks(2)
+        .map(|e| {
+            println!("seed: {}, range: {}", e[0], e[1]);
+            let mut result = find_location(e[0], &almanac);
+            for seed in e[0] + 1..e[1] + e[0] {
+                let tmp = find_location(seed, &almanac);
+                if tmp < result {
+                    result = tmp
+                }
+            }
+            Some(result)
+        })
+        .flatten()
+        .collect();
     println!("{:?}", result.into_iter().min());
     Ok(())
 }
@@ -94,7 +111,7 @@ fn separate_at_empty_string(original: Vec<String>) -> Vec<Vec<String>> {
     let mut result_vector: Vec<Vec<String>> = Vec::new();
     let mut subvector: Vec<String> = Vec::new();
 
-    for mut elem in original.clone().into_iter() {
+    for mut elem in original.into_iter() {
         elem = elem.replace(" map:", "");
         if elem.is_empty() {
             if !subvector.is_empty() {
