@@ -5,6 +5,7 @@ use std::io::{BufRead, BufReader};
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 enum Card {
+    Joker,
     Two,
     Three,
     Four,
@@ -23,6 +24,7 @@ enum Card {
 impl Card {
     fn from_char(c: char) -> Result<Card, ()> {
         match c {
+            '*' => Ok(Card::Joker),
             '2' => Ok(Card::Two),
             '3' => Ok(Card::Three),
             '4' => Ok(Card::Four),
@@ -65,22 +67,34 @@ struct Game {
 impl Game {
     fn new(bid: u32, hand: [Card; 5]) -> Self {
         let mut rec = [0usize; 5];
+        let nb_joker = hand.iter().filter(|c| **c == Card::Joker).count();
+        let clone_hand = hand.clone();
+        let mut checked_cards: Vec<Card> = vec![];
+
         for (i, card) in hand.iter().enumerate() {
-            let tmp = hand.iter().filter(|e| **e == *card).count();
+            if checked_cards.contains(card) {
+                continue;
+            }
+            let tmp = clone_hand
+                .iter()
+                .filter(|e| **e != Card::Joker && **e == *card)
+                .count();
             rec[i] = tmp;
+            checked_cards.push(*card);
         }
         Self {
-            hand_result: Game::hand_to_enum(rec),
+            hand_result: Game::hand_to_enum(rec, nb_joker),
             bid,
             hand,
         }
     }
 
-    fn hand_to_enum(mut hand: [usize; 5]) -> Hand {
+    fn hand_to_enum(mut hand: [usize; 5], nb_joker: usize) -> Hand {
         hand.sort_by(|a, b| b.cmp(a));
         let mut cards_recurrence = hand.into_iter().collect::<Vec<usize>>();
 
-        if cards_recurrence.iter().filter(|i| **i == 2).count() == 4 {
+        cards_recurrence[0] += nb_joker;
+        if cards_recurrence.iter().filter(|i| **i == 2).count() == 2 {
             return Hand::TwoPair;
         }
         cards_recurrence.dedup();
@@ -142,6 +156,12 @@ impl PartialEq for Game {
 
 fn main() -> io::Result<()> {
     let lines = read_lines("input.txt")?;
+    solve(lines.clone());
+    solve(lines.iter().map(|l| l.replace('J', "*")).collect());
+    Ok(())
+}
+
+fn solve(lines: Vec<String>) {
     let mut games: Vec<Game> = lines.into_iter().map(|l| get_card_type(l)).collect();
     games.sort();
     println!(
@@ -152,7 +172,6 @@ fn main() -> io::Result<()> {
             .map(|(i, e)| e.bid * (i as u32 + 1))
             .sum::<u32>()
     );
-    Ok(())
 }
 
 fn read_lines(filename: &str) -> io::Result<Vec<String>> {
